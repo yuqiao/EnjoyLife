@@ -11,9 +11,12 @@ Git 学习
 1.1 每日工作备份
 ------------------
 1. 每做完一个小节或者一个步骤：
+
    - git add -u  （ 若添加新文件用： git add -i )
    - git commit
+
 2. 推送到服务器
+
    - git push
 
 2 GitHub
