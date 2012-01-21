@@ -401,6 +401,44 @@ BIF(内建函数):
 
     erl -pa Dir1 Dir2 ... -pz DirK1 -pz DirK2
 
+6.3 运行程序的不同方法
+----------------------
+1. 在Erlang shell中编译运行::
+
+    $ erl
+    1> c(hello).
+    {ok,hello}
+
+2. 在命令提示符下编译运行::
+
+    $ erlc hello.erl
+    $ erl -noshell -pa ~/souce/life/docs/Erlang/src -s helo start -s init stop
+
+3. 把程序当做escript脚步运行, 创建这样的文件::
+
+    #!/usr/bin/env escript
+    main(_) ->
+        io:format("Hello world\n").
+
+4. 用命令行参数编程,需要修改文件, 例如fac1.erl::
+
+
+    -module(fac1).
+    -export([main/1]).
+
+    main([A]) ->
+        I = list_to_integer(atom_to_list(A)),
+        F = fac(I),
+        io:format("factorial ~w = ~w~n",[I,F,]),
+        init:stop().
+
+    fac(0) -> 1;
+    fac(N) -> N*fac(N-1).
+
+    -----------------------------
+    编译运行它：
+    $ erlc fac1.erl
+    $ erl -noshell -s fac1 main 25
 
 6.4 makefile
 ------------
@@ -425,6 +463,62 @@ makefile模板::
 
 6.6 解决系统死锁
 -------------------
+有时很难停止运行中的Erlang, 有以下几种原因:
+
+- shell没有响应.
+- Ctrl+C处理程序被禁止.
+- Erlang启动时带有-detached选项，你可能难以察觉它运行.
+- Erlang启动时带有-heart Cmd选项。这个选项会启动一个操作系统监视进程来监视系统中的Erlang进程，若Erlang进程死亡，监视进程会执行Cmd.通常Cmd会重庆Erlang系统。 应付这种情况，就是先杀掉心跳进程。
+- 可能发生严重错误，导致一个Erlang僵尸进程被遗留在操作系统中。
+
+6.7 如何应付故障
+-------------------
+1. 未定义/遗失代码。碰到一个undef的错误消息:
+
+   - 系统不存在该模块
+   - 系统存在该模块，但没有编译。
+   - 存放模块beam的目录不在搜索路径下
+   - 选择了模块的一个错误版本
+
+2. Makefile不能工作
+
+3. shell没有响应：
+
+    可以按下Ctrl+G来中断当前shell。
+
+6.8 获取帮助
+---------------
+- erl -man erl
+- erl -man lists
+
+6.9 调试环境
+----------------
+Erlang shell有一批内建命令，可以通过help()看到它们。
+
+这些命令都放在模块shell_default中。
+
+可以定义自己的命令，只需要创建一个叫user_default的模块，放在加载路径下::
+
+    -module(user_default).
+    -compile(export_all).
+
+    hello() ->
+        "Hello Joe how are you?"
+
+    away(Time) -> 
+        io:format("Joe is away and will be back in ~w mnutes ~n", [Time])
+
+6.10 崩溃转储
+----------------
+Erlang有一个基于web的崩溃分析器. 启动::
+
+    1> webtool:start().
+
+访问http://localhost:8888/,就可以研究错误日志文件了。
+
+7 并发
+=========
+
 
 8 并发编程
 =============
@@ -498,3 +592,4 @@ receive的内部工作机制:
 
 9 并发编程中的错误处理
 =======================
+9.1 链接程序
