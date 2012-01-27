@@ -228,6 +228,7 @@ for exanmple::
 记录(record)提供一种方法把一个名称与元祖中的一个元素对应起来。
 
 ::
+
     -record(Name, {
                     %% the next two keys have default values,
                     key1 = Default1,
@@ -593,3 +594,262 @@ receive的内部工作机制:
 9 并发编程中的错误处理
 =======================
 9.1 链接程序
+----------------
+如果一个进程在某种程度上依赖于另一个进程，那么它就需要时刻紧盯第二个进程的运行状态.
+可使用BIF link, 或者使用监视器。
+
+当一个进程接收到退出信号：
+
+- 默认是让该进程一并退出。
+- 该进程捕获退出信号，该进程又被称为系统进程。
+
+9.2 on_exit处理程序
+----------------------
+当进程退出时，执行一些动作, 编写程序on_exit(Pid, Fun), 会创建一个指向Pid进程的链接::
+
+    on_exit(Pid,Fun) ->
+        spawn( fun() ->
+                        process_flag(trap_exit, true), %% 把创建的进程转换为一个系统进程
+                        link(Pid),
+                        receive
+                            {'EXIT', Pid, Why} ->
+                                Fun(Why)
+                        end
+               end).
+
+9.3 远程错误处理
+------------------
+
+9.4 错误处理的细节
+-------------------
+Erlang错误处理的3种基础概念:
+
+- **链接(link)** 。定义了一种在两个进程之间的传播路径， 若一个进程消亡，就会向另一个进程发送一个退出信号。
+- **退出信号(exit signal)** 。进程消亡时，会产生一个叫做"退出信号"的东西。系统会向这个濒死进程的链接集的所有进程发送退出信号。
+- **系统进程(system process)** . 当进程接收一个非正常的退出信号它自己会退出，除非他是"系统进程"
+
+若把退出原因设为kill, 进程就会发送一个无法捕获的退出信号，无论是什么进程哪怕是系统进程，都会被终止。
+OTP中的监管进程就是使用这种方式来终止僵尸进程的。
+
+捕获退出的编程模式:
+
+1. 不在乎创建的进程是否崩溃::
+
+    Pid = spawn(fun() -> ... end)
+
+2. 若我创建的进程崩溃我也执行退出::
+
+    Pid = spawn_link(fun() -> ... end)
+
+3. 若我创建的进程崩溃我需要处理错误::
+
+    ...
+    process_flag(trap_exit, true),
+    Pid = spawn_link(fun() -> ... end),
+    ...
+    loop(...).
+
+    loop(State) ->
+        receive 
+            {'EXIT', SomePid, Reason} ->
+                %% do something with the error
+                loop(State1);
+            ....
+        end
+
+9.5 错误处理原语
+------------------
+- spawn_link(Fun) -> Pid
+- process_flag(trap_exit, true)
+- link(Pid) -> true
+- unlink(Pi) -> true
+- exit(Why) -> none()
+- exit(Pid,Why) -> none()
+  erlang:monitor(process, true) -> MonitorRef. 建立一个监视器，Item为Pid或进程的注册名。
+
+如何构建一个容错系统:
+
+    至少需要两台计算机，一台机器运行日常工作，由另外一台计算机监视第一台计算机并时刻准备在它崩溃时候接管工作。
+    称为："工人-监工"模型。整个OTP库都构建于监控树的概念之上，而监控树真是基于这种思想来构建的。
+    Erlang的整个容错特性及其体系从根本上依赖于link原语.
+    弄清link机制，并学会如何在两台计算机之间互相访问，那么第一个容错系统就已经是万事俱备只欠东风了。
+
+9.6 链接进程集
+-----------------
+
+9.7 监视器
+----------
+链接是对称的，而监视器是一个非对称的链接。
+
+9.8 存活进程
+---------------
+永远存活的进程-- 无论因为什么原因消亡，都会被立即重启 ::
+
+    keep_alive(Name, Fun) ->
+        register(Name, Pid =spawn(Fun) ),
+        on_exit(Pid, fun(_Why) -> keep_alive(Name, Fun) end ).
+
+这其中有个微妙错误： 进程有可能在on_exit之前死亡。
+
+10 分布式编程
+===============
+分布式编程是针对网络上仅通过消息传递来完成互相协作的计算机集群所设计的程序。需求:
+
+- 效率
+- 可靠性
+- 可伸缩性
+- 天生需要分布式的应用程序
+- 乐趣
+
+分成以下几个步骤:
+
+1. 现在一个非分布式Erlang环境中编写和测试程序。
+#. 然后会在同一台机器上的两个不同节点上测试程序。
+#. 最好在同一个网络或者因特网上的两台互相独立的集群上开启不同Erlang节点来测试程序。
+
+10.2 分布式原语
+-----------------
+分布式Erland的核心概念是节点，一个节点就是一个自给自足的系统，他是一个包含地址空间和独立进程集的完整虚拟机。
+
+- spawn(Node, Fun) -> Pid.
+- spawn(Node, Mod, Func, ArgList) -> Pid
+- spawn_link
+- disconnect_node(Node)
+- monitor_node(Node, Flag)
+- node()/node(Arg)
+- nodes()
+- is_alive
+- {RegName, Node} ! Msg
+
+examples::
+
+    -module(dist_demo).
+    -export([rpc/4,start/1]).
+
+    start(Node) ->
+        spawn(Node, fun() -> loop() end).
+
+    rpc(Pid, M, F, A) ->
+        Pid ! {rpc, self(), M, F, A},
+        receive
+            {Pid, Response} ->
+                Response
+        end.
+
+    loop() ->
+        receive
+            {rpc, Pid, M,F,A} ->
+                Pid ! {self(), (catch apply(M,F,A))},
+                loop()
+        end.
+
+11 IRC Lite
+================
+5个组成部分:
+
+- 用户界面: 用于将接收到的信息显示出来的GUI窗口组件。
+- 聊天客户端: 负责管理消息。
+- 群管理器: 负责管理单个聊天组。若群控制器接收打一个消息，它会将这条消息广播到组中所有成员。
+- 聊天服务器：负责持续跟踪所有群组控制器。
+- 中间人：负责管理系统之间的数据传输。
+        
+11.1 消息序列图
+---------------------
+
+11.2 用户界面
+--------------
+提供接口:
+
+- io_widget:start(Pid) -> Widget
+- io_widget:set_title(Widget, Str)
+- io_widget:set_state(Widget, State)
+- io_widget:insert_str(Widget, Str)
+- io_widget:set_handler(Widget, Fun)
+
+窗口会产生消息： 
+- {Widget, State, Parse}
+- {Widget,destroyed}
+
+11.3 客户端程序
+-----------------
+有3个进程： 用户界面， 聊天客户端， 中间人进程。
+
+
+
+12 接口技术
+============
+Erlang的运行时系统通过二进制的通信通道与外部程序交互。
+
+Erlang端有一个Erlang端口(端口连接进程)负责管理这样的通信。
+所有向外部程序发送的消息的目标地址必须是端口连接的PID，所有从外部程序传入的消息都直接送入端口连接进程。
+
+12.1 端口
+-------------
+创建一个端口::
+
+    Port = open_port(PortName, PortSettings)
+    Port ! {PidC,{command,Data}}  %%
+    Port ! {PidC, {connect, Pid1}}
+    Port ! {PidC, close}
+
+通过下面的方法接收来自外部程序的消息::
+
+    receive
+        {Port, {data,Data}} ->
+            ... Data comes from external process ...
+
+12.2 为一个外部C程序添加接口
+------------------------------
+
+13 对文件编程
+=================
+13.1 库的组织结构
+------------------
+4个模块:
+- file模块。包含文件打开，关闭，读取，写入和目录列表等功能的函数。
+- filename模块。以平台独立的形式提供了一套操作文件的函数。
+- filelib模块， file模块的扩展，提供一套辅助函数用于生成文件列表，检验文件类型等操作。
+- io模块，提供一系列对已打开的文件进行操作的函数。
+
+13.2 读取文件的不同方法
+-----------------------
+data1.dat 原始数据::
+
+    {person, "joe", "armstrong",
+        [{occupation, programmer},
+         {favoriateLanguage, erlang}]}.
+
+    {cat, {name, "zorro"},
+          {owner,"joe"}}.
+
+1. 从文件中读取所有Erlang数据项::
+
+    file:consult("data1.dat"). %% 返回{ok,[Term]}; 失败返回{error, Reason}.
+
+#. 从文件的数据项中一次读取一项::
+
+    {ok, S} = file:open("data1.dat", read).
+    io:read(S,'').
+    io:read(S,'').
+    file:close(S).
+
+#. 从文件中一次读取一行数据::
+
+    {ok, S} = file:open("data1.dat", read).
+    io:get_line(S,'').
+
+#. 将整个文件的内容读入到一个二进制数据中::
+
+    file:read_file("data1.dat").
+
+#. 随机读取一个文件::
+
+    {ok, S} = file:open("data1.dat", read).
+    file:pread(S,22,46).
+    file:pread(S,1,10).
+
+    
+
+
+
+
