@@ -108,8 +108,7 @@ scala的常量名, 习惯只是第一个字母必须大写.
 
 在设计库的时候你应记在脑袋你的目标并不是仅仅让客户代码简洁, 而是让他变得更可读,更易懂.
 
-7 内建控制结构
-===============
+# 7 内建控制结构
 
 由于while循环不产生值,因此他经常被纯函数式语言所舍弃.
 
@@ -176,8 +175,7 @@ finally也产生值.
 
     任何定义在花括号里的东西超出括号之后就脱离了范围. ( for子句有例外)
 
-8 函数和闭包
-=============
+# 8 函数和闭包
 函数式编程风格的重要设计原则: 程序应该被解构成若干小的函数.
 
 本地函数可以访问包含其函数的参数.
@@ -228,8 +226,8 @@ finally也产生值.
         //但不能这样写: val c = sum
         val d = sum _   //必须带占位符
      
-9 控制抽象
-==========
+# 9 控制抽象
+
 ## 9.1 减少代码重复
 
 所有的函数都可以被分成通用部分, 以及非通用部分. 通用部分是函数体, 而非通用部分必须由参数提供.
@@ -325,9 +323,11 @@ scala的任何方法调用, 如果你确实只传入一个参数, 就能可选�
 
 ## 9.5 传名参数
 
+
 # 10 组合与继承
 
 ##10.1 二维布局库
+
 ##10.3 定义无参数方法
 
 scala鼓励使用不带参数且没有副作用的方法定义为无参数方法的风格, 即省略空括号.
@@ -339,10 +339,105 @@ scala仅有两个命名空间:
 - 值
 - 类型
 
+# 11 Scala的层级
+
+Scala中每个类都继承超类Any。在底层还定义了： Null和Nothing。 Nothing是所有其他类的子类。
+
+## 11.1 Scala的类层级
+
+Any两子类:
+
+- AnyVal: 内建值类的父类， 有9个子类：
+
+    - Byte
+    - Short
+    - Char
+    - Int
+    - Long
+    - Float
+    - Double
+    - Boolean
+    - Unit
+
+- AnyRef：所有引用类的基类，就是java.lang.Object的别名。还继承自一个名为ScalaObject的特别的记号特质（ 用于编译优化）
 
 
-21 隐式转换和参数
-================
+## 11.2 原始类型是如何实现的
+
+## 11.3 底层类型
+
+Null类是null引用对象的类型, 是每个引用类的子类. 不兼容值类型.
+Nothing类型在Scala的类层次的最底层.
+
+# 12 特质
+
+特质封装了方法和字段的定义,并可以混入到类中重新定义它们.
+
+# 13 包和引用
+
+做程序的时候, 使耦合最小化是很重要的. 减小耦合性的方式之一是使用模块化的风格编写代码.
+
+# 13.1 包
+scala采用java平台完整的包机制.
+
+1. 和java相同:
+
+    package bobosrockets.navigtion
+    class Navigtor
+
+2. 像C#的命名空间:
+    
+    package bobosrockets {
+        package navigtion{
+            class Navigtor
+            package tests{
+                class NavigtorSuite
+            }
+        }
+    }
+                
+顶层包: _root_
+
+# 13.2 引用
+
+import子句让包活对象的成员可以子句通过名称访问而不是通过前缀包访问.
+例子:
+
+    import bobosrockets.Fruit
+    import bobosrockets._
+    import bobosrockets.Fruit._
+
+Scala的引用可以出现在任何地方.
+
+可以引用包本身.
+
+可以重命名或隐匿成员:
+
+    import Fruits.{Apple, Orange}
+    import Fruits.{Apple => McIntosh, Orange}
+    import java.sql.{Date => SDate}
+
+    import Fruits.{Pear => _, _ }  // 引用了Fruits的所有成员,但Pear除外
+
+# 13.3 隐式引用
+Scala为每个程序隐式地添加一些引用:
+
+    import java.lang._
+    import scala._
+    import Predef._
+
+# 13.4 访问修饰符
+
+private[X] 表示"直到"X的私有保护.
+
+private[this]标记的定义仅能在包含了定义同一个对象中被访问.
+
+类的所有访问权限都对伴生对象开放,反过来也是如此.
+
+# 14 断言和单元测试
+
+
+# 21 隐式转换和参数
 隐式转换只是普通的方法, 但它一修饰符implicit开始.
 
 例子:
