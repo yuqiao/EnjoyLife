@@ -33,6 +33,11 @@
 
         git config --global color.ui true
 
+4. 修改git commmit 用户.
+
+    
+    git commit --amend --author='乔云 <rongqiao.yurq@taobao.com>'
+
 ### 1.2 git操作
 
 0. 获取帮助:
