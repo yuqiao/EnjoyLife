@@ -1,0 +1,274 @@
+# Git 权威指南
+
+# 第二篇 Git独奏
+Git是分布式版本控制系统, 与集中式版本控制系统有巨大差异.
+**"你应该了解真相,真相会使你自由".**
+
+# 4. git初始化
+## 4.1 创建版本库及第一次提交
+一 需要设置Git的配置变量.
+
+1. 告知git用户和邮件地址
+2. 设置git别名,以便使用更简洁的命令.
+3. 在git命令输出中开启颜色显示:
+    $ git config --global conlor.ui true
+
+二 创建git版本库.
+
+1. 创建目录
+2. 进入目录, 执行git init.
+
+隐藏的.git目录就是Git版本库.
+
+## 4.2 思考: 为何有.git目录
+
+svn目录结构特点:
+
+1. 不仅包含配置文件, 还包含当前工作区下每个文件的拷贝.使得svn子命令可以脱离版本库执行,而且客户端提交时,可以只提交改动的部分. 缺点: 加倍占用工作区的空间.
+2. 搜索结果很乱.
+
+git这种将版本库放在工作区根目录下的设计优点:
+
+1. 所有操作(除了远程版本库操作)都可以在本地完成. 不像svn只有寥寥无几的命令能脱离网络.
+2. 没有svn安全泄露问题.
+3. 没有本地搜索结果很乱的问题. git grep 命令.
+
+在git工作区的某个子目录下执行操作的时候,会在工作区目录上依次向上递归查找.git目录.找到的.git目录就是工作区对应的版本库.
+
+使用strace命令跟踪git status命令时的磁盘访问:
+    strace -e "trace=file" git status
+
+.git/index 记录了工作区文件的状态(暂存区的状态)
+
+- 显示版本库.git目录所在的位置:
+    git rev-parse --git-dir
+- 显示工作区目录:
+    git rev-parse --show-toplevel
+- 相对于工作区的相对目录:
+    git rev-parse --show-prefix
+- 显示从当前目录到工作区的深度:
+    git rev-parse --show-cdup
+
+git克隆可以降低因为版本库和工作区混杂在一起导致版本库被破坏的风险.
+
+## 4.3 思考: git config 命令的各参数区别
+
+- git config -e :  版本库 demo/.git/config文件
+- git config -e --global: /home/rongqiao.yurq/.gitconfig
+- git config -e --system: /etc/gitconfig
+
+git配置文件采用INI文件格式.
+
+## 4.4 思考: 是谁完成了提交
+清空配置:
+
+- git config --unset --global user.name
+- git config --unset --global user.email
+
+提交:
+
+    git commit --allow-empty -m "who does commit?"
+
+看日志:
+
+    git log --pretty=fuller
+
+恢复user.name和user.email. ...
+
+对刚刚提交进行修补:
+
+    git commit --amend --allow-empty --reset-author
+
+--amend: 对刚刚的提交进行修补.
+
+## 4.5 思考: 随意设置提交者姓名,是否不太安全
+
+## 4.6 思考: 使用别名
+
+git config --global alias.ci "commit -s"
+
+## 4.7 备份本章成果
+
+git clone demo demo-step-1
+
+# 5. Git暂存区
+
+git log --stat (--stat参数可以看到每次提交的文件变更统计)
+
+## 5.1 修改不能直接提交
+
+状态精简格式输出:
+
+    git status -s
+
+git log --pretty=oneline
+
+git diff --cached / git diff --staged
+
+## 5.2 理解暂存区(stage)
+
+.git/index实际上是一个包含文件索引的目录树.像是一个虚拟的工作区, 在这个虚拟的工作区的目录树中, 记录了文件名和文件的状态信息(时间戳和文件长度等). 文件的内容并没有存储在其中, 而是保存在Git对象库.git/objects目录中, 文件索引建立了文件和对象库中对象实体之间的对应.
+
+- HEAD实际是指向master分支的一个"游标", 可以当做Master.
+- git add时, 暂存区的目录树将被更新, 同时工作区修改(或新增)的文件内容会被写入对象库中的一个新对象中, 而该对象的ID被记录在暂存区的文件索引中.
+- 执行git commit时,暂存区的目录树会写到版本库(对象库)中, master分支会做相应的更新, 即Master的最新指向的目录树就是提交时原暂存区的目录树.
+- git reset HEAD时, 暂存区的目录树会被重写,会被master指向的目录树所替换, 但是工作区的目录树不受影响.
+- git rm --cached <file>命令时, 会直接从暂存区删除文件,工作区则不改变.
+- git checkout 或 git checkout -- <file> 命令时, 会用暂存区全部的文件或指定的文件替换工作区的文件. **操作很危险.** 会清除工作区中未添加到暂存区的内容.
+- git checkout HEAD <file>, 会用HEAD指向的master分支中的全部或部分文件替换暂存区和工作区中的文件, **极具危险性**
+
+## 5.3 git Diff 魔法
+### 1. 工作区,暂存区和版本库的目录树浏览
+
+查看HEAD指向的目录树:
+
+    $ git ls-tree -l HEAD
+    100644 blob fd3c069c1de4f4bc9b15940f490aeb48852f3c42      25    welcome.txt
+
+- -l 参数可以显示文件的大小.
+- 输出格式: 文件属性(rw-r--r--), git对象库中的一个blob对象, 该文件在对象库中对应的ID(40位的SHA1哈希格式的ID), 文件大小, 文件名
+
+清除工作区当前的改动:
+    
+    $ git clean -fd   # 清除当前工作区没用加入版本库的文件和目录
+
+用暂存区内容刷新工作区:
+
+    $ git checkout .
+
+对工作区修改:
+
+    $ echo "Bye-Bye." >> welcome.txt
+    $ mkdir -p a/b/c
+    $ echo "Hello." >> a/b/c/hello.txt
+    $ git add .
+    $ echo "Bye-Bye." >> a/b/c/hello.txt
+    $ git status -s
+
+查看工作区文件大小:
+    
+    find . -path ./.git -prune -o -type f -print | xargs ls -l
+    -rw-r--r--  1 Qiao  staff  15 12 12 17:07 ./a/b/c/hello.txt
+    -rw-r--r--  1 Qiao  staff  34 12 12 17:05 ./welcome.txt
+
+显示暂存区的目录树: 
+
+    $ git ls-files -s
+    100644 e965047ad7c57865823c7d992b1d046ea66edf78 0   a/b/c/hello.txt
+    100644 51dbfd25a804c30e9d8dc441740452534de8264b 0   welcome.txt
+
+上面第三个字段不是文件大小而是暂存区编号.
+
+若需要对暂存区目录树使用git ls-tree命令, 需要先讲暂存区的目录树写入git对象库(git write-tree命令), 然后用git ls-tree.
+
+    $ git write-tree
+    375f8181f28bf2f69f95f429f8ddc78f07ed3210
+    $ git ls-tree -l 375f
+    040000 tree e56a4d15295d3754310f114c86d93645308110ad       -    a
+    100644 blob 51dbfd25a804c30e9d8dc441740452534de8264b      34    welcome.txt
+
+递归显示目录树内容:
+
+    $ git ls-tree -l -r -t 375f
+    040000 tree e56a4d15295d3754310f114c86d93645308110ad       -    a
+    040000 tree 6d2ce67bdd55ae2c2ac72cbc879ed7c67ecc9786       -    a/b
+    040000 tree 8c3c7fbcd903744b20fd7567a1fcefa99133b5bc       -    a/b/c
+    100644 blob e965047ad7c57865823c7d992b1d046ea66edf78       6    a/b/c/hello.txt
+    100644 blob 51dbfd25a804c30e9d8dc441740452534de8264b      34    welcome.txt
+
+
+
+### 2. git diff 魔法
+1. 工作区和暂存区的比较.  git diff
+2. 暂存区和HEAD的比较. git diff --staged
+3. 工作区和HEAD的比较. git diff HEAD
+
+## 5.4 不要使用git commit -a
+
+git ci -a 对本地所以变更的文件执行提交操作.不包括未被版本库跟踪的文件.
+
+丢掉git暂存区带给用户的最大好处: 对提交内容进行控制的能力. ??
+
+## 5.5 搁置问题,暂存状态
+
+保存当前工作进度: git stash
+
+git stash之后, 会看见工作区尚未提交的更改全都不见了.
+
+# 6. Git对象
+
+# 7. Git重置
+
+# 8. Git检出
+
+# 9. 恢复进度
+
+# 10. Git基本操作
+
+# 11. 历史穿梭
+
+# 12. 改变历史
+
+# 13. Git克隆
+
+# 14 Git库管理
+
+# 15. Git协议与工作协同
+
+# 16. 冲突解决
+
+# 17. Git里程碑
+
+# 18. Git分支
+
+# 19. 远程版本库
+
+# 20. 补丁文件交互
+
+# 21. 经典Git协同模型
+
+# 22. Topgit协同模型
+
+# 23. 子模组协同模型
+
+# 24 子树合并
+
+# 25. Android式多版本库协同
+
+# 26. Git和Svn协同模型
+
+# 第五篇 搭建Git服务器
+
+# 27. 使用HTTP协议
+
+# 28. 使用Git协议
+
+# 29. 使用SSH协议
+
+# 30. Gitolite服务架设
+
+# 31. Gitosis服务架设
+
+# 32. Gerrit代码审核服务器
+
+# 33. Git版本库代管
+
+# 34. CVS版本库到Git迁移
+
+# 35. 更多版本控制系统的迁移
+
+# 第七篇 Git的其它应用
+
+# 36. etckeeper
+
+# 37. Gistore
+
+# 38. 补丁中的二进制文件
+
+# 39. 云存储
+
+# 第八篇 Git杂谈
+
+# 40. 跨平台操作Git
+
+# 41. Git的其它特性
