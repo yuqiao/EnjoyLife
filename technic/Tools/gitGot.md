@@ -95,6 +95,8 @@ git clone demo demo-step-1
 
 git log --stat (--stat参数可以看到每次提交的文件变更统计)
 
+暂存区是一个介于工作区和版本库的中间状态, 当执行提交时, 即将暂存区的内容提交到版本库中.
+
 ## 5.1 修改不能直接提交
 
 状态精简格式输出:
@@ -196,6 +198,115 @@ git ci -a 对本地所以变更的文件执行提交操作.不包括未被版本
 git stash之后, 会看见工作区尚未提交的更改全都不见了.
 
 # 6. Git对象
+
+## 6.1 git对象库探秘
+对象Id: SHA1哈希值.
+
+$ git log -1 --pretty=raw
+
+    commit 86035d7a3816e881047b84513ef840c16a1e92e9
+    tree f58da9a820e3fd9d84ab2ca2f1b467ac265038f9
+    parent b3d0474e6643072d1be575b1ec299fd5ede17be0
+    author rongqiao.yurq <rongqiao.yurq@taobao.com> 1386833774 +0800
+    committer rongqiao.yurq <rongqiao.yurq@taobao.com> 1386833774 +0800
+        which version checked in?
+
+有3个对象ID:
+- commmit 86035d7a3816e881047b84513ef840c16a1e92e9: 这是本次提交的唯一标识
+- tree f58da9a820e3fd9d84ab2ca2f1b467ac265038f9: 这是本次提交对应的目录树
+- parent b3d0474e6643072d1be575b1ec299fd5ede17be0: 这是本次提交的父提交(上一次提交)
+
+研究Git对象ID的一个重量级武器是: git cat-file命令. 可以查看三个Id 的类型:
+
+    $ git cat-file -t 86035
+    commit
+    $ git cat-file -t f58da
+    tree
+    $ git cat-file -t b3d0
+    commit
+
+引用对象id不需要写全,只要从头开始的几位不要冲突即可.
+
+查看对象内容:
+
+    $ git cat-file -p 8603
+    tree f58da9a820e3fd9d84ab2ca2f1b467ac265038f9
+    parent b3d0474e6643072d1be575b1ec299fd5ede17be0
+    author rongqiao.yurq <rongqiao.yurq@taobao.com> 1386833774 +0800
+    committer rongqiao.yurq <rongqiao.yurq@taobao.com> 1386833774 +0800
+
+    which version checked in?
+    $ git cat-file -p f58d
+    100644 blob fd3c069c1de4f4bc9b15940f490aeb48852f3c42    welcome.txt
+
+blob 对象, 保存了文件welcome.txt的内容.
+
+    $ git cat-file -t fd3c
+    blob
+    $ git cat-file -p fd3c
+    Hello.
+    Nice to meet you.
+
+这些对象保存在哪里? 在Git库中的objects目录下, ID的前两位作为目录名, 后38位作为文件名.
+
+    $ ls .git/objects/fd/
+    3c069c1de4f4bc9b15940f490aeb48852f3c42
+    $ ls .git/objects/86/
+    035d7a3816e881047b84513ef840c16a1e92e9
+
+通过提交对象之间的相互关联, 可以很容易识别出一条跟踪链.
+
+    $ git log --pretty=raw --graph 86035
+    * commit 86035d7a3816e881047b84513ef840c16a1e92e9
+    | tree f58da9a820e3fd9d84ab2ca2f1b467ac265038f9
+    | parent b3d0474e6643072d1be575b1ec299fd5ede17be0
+    | author rongqiao.yurq <rongqiao.yurq@taobao.com> 1386833774 +0800
+    | committer rongqiao.yurq <rongqiao.yurq@taobao.com> 1386833774 +0800
+    |
+    |     which version checked in?
+    |
+    * commit b3d0474e6643072d1be575b1ec299fd5ede17be0
+    | tree 190d840dd3d8fa319bdec6b8112b0957be7ee769
+    | parent 659c6776234a7e12aa897b237351b6693132c906
+    | author rongqiao.yurq <rongqiao.yurq@taobao.com> 1386831097 +0800
+    | committer rongqiao.yurq <rongqiao.yurq@taobao.com> 1386831097 +0800
+    |
+    |     who does commit?
+    |
+    * commit 659c6776234a7e12aa897b237351b6693132c906
+      tree 190d840dd3d8fa319bdec6b8112b0957be7ee769
+      author rongqiao.yurq <rongqiao.yurq@taobao.com> 1386829417 +0800
+      committer rongqiao.yurq <rongqiao.yurq@taobao.com> 1386829417 +0800
+
+          initialized.
+
+git st -b -s, -b选项可以显示出当前工作分支的名称.
+
+    $ git st -s -b
+    ## master
+
+执行以下三个命令:
+
+    Qiao@yumatoMacBook-Pro-2:~/practice/playGit/demo$ git log -1 HEAD
+    commit 86035d7a3816e881047b84513ef840c16a1e92e9
+    Author: rongqiao.yurq <rongqiao.yurq@taobao.com>
+    Date:   Thu Dec 12 15:36:14 2013 +0800
+
+        which version checked in?
+    Qiao@yumatoMacBook-Pro-2:~/practice/playGit/demo$ git log -1 master
+    commit 86035d7a3816e881047b84513ef840c16a1e92e9
+    Author: rongqiao.yurq <rongqiao.yurq@taobao.com>
+    Date:   Thu Dec 12 15:36:14 2013 +0800
+
+        which version checked in?
+    Qiao@yumatoMacBook-Pro-2:~/practice/playGit/demo$ git log -1 refs/heads/master
+    commit 86035d7a3816e881047b84513ef840c16a1e92e9
+    Author: rongqiao.yurq <rongqiao.yurq@taobao.com>
+    Date:   Thu Dec 12 15:36:14 2013 +0800
+
+        which version checked in?
+
+说明HEAD, master, refs/heads/master具有相同的指向.
 
 # 7. Git重置
 
