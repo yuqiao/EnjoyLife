@@ -38,6 +38,11 @@
     
     git commit --amend --author='乔云 <rongqiao.yurq@taobao.com>'
 
+5. 配置编辑器:
+
+    git config --global core.editor vim
+
+
 ### 1.2 git操作
 
 0. 获取帮助:
