@@ -75,4 +75,8 @@ Command-Ctrl-Shift-4: 对选定区域进行截屏，图片被保存到剪贴板�
 - command + 链接点击, 在新标签页打开链接
 -
 
+# 开发工具
+1. gdb:
+
+    brew install https://raw.github.com/Homebrew/homebrew-dupes/master/gdb.rb
 

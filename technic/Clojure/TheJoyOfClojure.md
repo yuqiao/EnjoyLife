@@ -1,4 +1,4 @@
-# Clojure编程乐趣
+ # Clojure编程乐趣
 
 # 基础
 
@@ -235,19 +235,130 @@ vector解构:as :
 
 ## 5.1 持久化, 序列和复杂度
 
+持久化: 拥有特定属性的不变内存集合.
+
+一个数据抽象有100个函数操作, 好于10个数据结构各有10个函数操作.
+
+sequential(顺序的)集合: 持有一系列值而不重新排序的集合.
+seuence(序列): 一种顺序集合, 表示一系列可能存在也可能不存在的值.
+
+三种逻辑分类:
+
+- 顺序的
+- set
+- map
+
+若两顺序集合有相同的值且顺序相同, =就会返回true.
+
 ## 5.2 vector
 
-## 5.3 list
+### 构建vector
+
+用vector表示let, with-open, fn等的绑定是Clojure的一种惯用法, 一种模式.
+
+1. 使用函数vec创建:
+
+    (vec (range 10)) ; => (0 1 2 3 4 5 6 7 8 9)
+
+2. into:
+
+    (let [my-vector [:a :b :c]] 
+        (into my-vector (range 10))) ; 要返回一个vector, into的第一个参数必须是vector.
+
+3. 原生类型vector:
+
+    (into (vector-of int) [Math/PI 2 1.3])  ;=> [3 2 1]
+    (into (vector-of :char) [ 100 101 102]) ;=> [\d \e \f]
+
+### 大vector
+
+相对于list, vector在三个方面比较高效:
+
+- 在集合右端添加或删除
+- 通过数字索引访问或修改集合内的项.
+- 反向遍历
+
+(def a-to-j (vec (map char (range 65 75))))
+
+三种查找方式:
+
+    (nth a-to-j 4)
+    (get a-to-j 4)
+    (a-to-j 4)
+
+
+使用assoc函数修改. 
+
+    (assoc a-to-j 4 "no longer E")
+
+### vector当做栈
+
+使用conj和pop, 例子:
+
+    (def my-stack [1 2 3])
+    (peek my-stack)  ;=> 3
+    (pop my-stack)   ;=> [1 2]
+    (conj my-stack 4) ;=> [1 2 3 4]
+
+### 使用vector而非reverse
+vector可以在右边高效地增长.
+
+(defn strict-map2 [f coll]
+    (loop [coll coll, acc []]
+        (if (empty? coll)
+            acc
+            (recur (next coll) (conj acc (f (first coll)))))))
+
+### 子vector
+
+虽然vector中的项无法高效移除(除了最后一项), 但子vector提供一种快速方式.
+(subvec a-to-j 3 6)
+
+### vector当做MapEntry
+
+(vector? (first {:width 10, :height 20, :depth 15}))
+
+(doseq [[dimension amount] {:width 10, :heght 20, :depth 15}]
+    (println (str (name dimension) ":") amount "inches"))
+
+
+## vector 不是什么
+
+- vector不是稀疏的, 虽然可以替换, 却不能插入或者删除.
+- vector不是队列.
+- vector不是set
+
+
+## 5.3 list: Clojure代码form的数据结构
+
+(cons 1 '(2 3) ) ; => (1 2 3)
+(conj '(2 3) 1) ;=> (1 2 3)
+
+推荐使用conj.
+
+- list 不能用索引.
+- list 不是set.
+- list 不是队列.
 
 ## 5.4 如何使用持久化队列
+PersistentQueue
 
 ## 5.5 持久化set
 
 ## 5.6 思考map
 
 ## 5.7 知识汇总: 在序列里查找某项位置
+(defn index [coll]
+    (cond
+        (map? coll) (seq coll)
+        (set? coll) (map vector coll coll)
+        :else (map vector (iterator inc 0) coll)) )
+
+(defn pos [pred coll]
+    (for [ [i v] (index coll) :when (pred v)] i))        
 
 # 6 惰性与不变性
+
 
 ## 6.1 关于不变性
 

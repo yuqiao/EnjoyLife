@@ -227,6 +227,127 @@ s[i]
 
 # 5. 网络编程
 
+## 5.1 Socket编程
+
+### Dial函数
+- tcp: 
+
+	conn, err := net.Dial("tcp", "192.168.0.10:2100")
+
+- udp:
+
+	conn, err := net.Dial("udp", "192.168.0.12:975")	
+
+- icmp:
+
+	conn, err := net.Dial("ip4:icmp", "www.baidu.com")	
+
+使用conn的Write方法发送， 使用Read方法接收.
+
+- read:
+	
+	func readFully(conn net.Conn) ([]byte,  error) {
+		defer conn.Close()
+
+		result := bytes.NewBuffer(nil)
+		va buf [512]byte
+		for {
+			n, err := conn.Read(buf[0:])
+			result.Write(buf[0:n])
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return nil, err
+			}
+
+		}
+		return result.Bytes(), nil
+	}	
+
+- write:
+
+	_, err = conn.Write([]byte("HEAD / HTTP/1.0\r\n\r\n")
+
+### 其它方法：
+
+- 验证IP地址有效性： func net.ParseIP()
+- 创建子网掩码： func IPv4Mask(a, b, c, d byte) IPMask
+- 获取默认子网掩码： func (ip IP) DefaultMask() IPMask
+- 根据域名查找IP:
+
+	func ResolveIPAddr(net, addr string) (*IPAddr, error)
+	func LookupHost(name string)(cname string, addrs []string, err error)
+
+## 5.2 HTTP编程
+
+### HTTPk客户端
+
+- Get ：
+
+	resp, err = http.Get("http://www.baidu.com")
+	if err != nil {
+		// process error...
+		return
+	}
+
+	defer resp.Body.close()
+	io.Copy(os.Stdout, resp.Body)
+
+- Post:
+
+	resp, err = http.Post("http://example.com/upload", "image/jpeg", &imageDtaBuf)
+	if err != nil {
+		// process error ...
+		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		// process error ...
+		return
+	}
+	// ...
+
+- PostForm():	
+
+	resp, err = http.PostForm("http://example.com/posts", url.Values{"title": {"articlae title"}, "content":{"article body"} })
+	if err != nil {
+		// process error ...
+		return
+	}
+
+- Head():
+
+	resp, err = http.Head("http://www.baidu.com")
+
+- （*http.Client).Do()
+
+	client := &http.Client {
+		CheckRedirect: redirectPolicyFunc,
+	}
+	resp, err := client.Get("http://example.com")
+	req, err := http.NewRequest("GET", "http://example.com", nil)
+	req.Header.Add("User-Agent", "Our Custom User-Agent")
+	req.Header.Add("If-None-Match", `W/"TheFileEtag"`)
+	resp, err := client.Do(req)
+
+- 自定义http.Transport	
+
+- 灵活的http.RoundTripper接口
+
+### HTTP服务端
+
+
+
+## 5.3 RPC编程
+
+## 5.4 JSON处理
+
+## 5.5 网站开发
+
+## 小结
+
+
 # 6. 安全编程
 
 # 7. 工程管理
@@ -234,3 +355,19 @@ s[i]
 # 8. 开发工具
 
 # 9. 进阶话题
+
+## 9.1 调试
+
+go build -gcflags "-N -l" // 编译， 关闭内联优化
+gdb demo
+l main.main
+l main.go:8
+b main.main
+b main.go:17
+info breakpoints
+info goroutines
+goroutine 1 bt  // 查看指定序号的goroutine调用堆栈
+info frame
+info locals
+whatis i
+x/3xw &r     // 查看 r内存数据（
