@@ -15,7 +15,7 @@ Effective Proggramming: More Than Writing Code
 
 ## 学海无边
 
-    "m每一天, 你一定要一起床就热情澎湃, 否则, 你只是在打工."
+    "每一天, 你一定要一起床就热情澎湃, 否则, 你只是在打工."
 
 想做一些很酷的东西来让互联网变得更好.
 
@@ -23,7 +23,7 @@ Effective Proggramming: More Than Writing Code
 
 
 ## 磨刀不误砍柴工
-r如何磨快你的锯子?
+如何磨快你的锯子?
 
 - 阅读编程相关的博客与书籍. 推荐: news.ycombinator.com, www.reddit.com/r/programming
 
