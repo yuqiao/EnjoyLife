@@ -37,6 +37,18 @@ DI能够让相互协作的软件组件保持松散耦合，而AOP允许你把遍
 
 ### 1.2 容纳你的Bean
 
+基于Spring的应用中，你的应用对象生存于Spring容器中。Spring容器负责创建对象，装配他们，配置它们并管理他们的整个生命周期，从生存到死亡。
+
+#### 使用应用上下文
+
+#### bean的生命周期
+
+1. 对Bean实例化
+2. 填充属性
+3. 调用BeanNameAware的setBean-name()方法
+4. 调用BeanFactoryAware的setBeanFactory方法
+5. ​
+
 ### 1.3 俯瞰Spring风景线
 
 ### 1.4 Spring的新功能
