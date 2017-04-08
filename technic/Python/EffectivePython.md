@@ -112,6 +112,13 @@ eval语法： eval(expression[, globals[, locals]])
 
 ## 第3章　基础语法 45
 ### 建议19：有节制地使用from...import语句 45
+
+- 尽量优先使用import a形式
+- 有节制使用from a import B形式
+- 尽量避免使用from a import * 
+
+
+
 ### 建议20：优先使用absolute import来导入模块 48
 ### 建议21：i+=1不等于++i 50
 ### 建议22：使用with自动关闭资源 50
