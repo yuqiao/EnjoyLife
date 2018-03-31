@@ -1,0 +1,5 @@
+before_deploy:
+  - tnpm install gitbook@1
+  - node_modules/.bin/gitbook build -o ./_book
+options:
+  dist: '_book'
