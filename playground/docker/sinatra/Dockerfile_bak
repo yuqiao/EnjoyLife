@@ -1,0 +1,16 @@
+FROM ubuntu:18.04
+MAINTAINER yuqiao "yunqiao2014@163.com"
+
+ENV REFRESHED_AT 2018-08-01
+RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak
+ADD sources.list /etc/apt/sources.list
+
+RUN apt-get update
+RUN apt-get -y install ruby ruby-dev build-essential redis-tools
+RUN gem install --no-rdoc --no-ri sinatra json redis
+
+RUN mkdir -p /opt/webapp
+
+EXPOSE 4567
+
+CMD ["/opt/webapp/bin/webapp"]
