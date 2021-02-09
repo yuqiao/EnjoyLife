@@ -1,2 +1,10 @@
 .DS_Store
 datadir
+.mvn
+__pycache__
+*.pyc
+target
+.vscode
+.project
+.settings
+.classpath
