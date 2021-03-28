@@ -25,14 +25,14 @@ def print_month_note(month, year=None):
     today = date.today()
     year = year or today.year
     cal = Calendary(year)
-    print '## Goal\n\n'
-    print '## Action\n[[%s年%s月]]\n' % (year, month)
-    print '## Summary\n\n'
-    print '---'
+    print('## Goal\n\n')
+    print('## Action\n[[%s年%s月]]\n' % (year, month))
+    print('## Summary\n\n')
+    print('---')
     for wd, d in cal.month(month):
-        print '%s. %s' % (d.day, WD2FLAG[wd])
-    print ''
-    print '#01.bullet/%s#' % year
+        print('%s. %s' % (d.day, WD2FLAG[wd]))
+    print('')
+    print('#01.bullet/%s#' % year)
 
 
 def main():
